@@ -29,7 +29,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const tenant = await verifyTenantOwner(id, session.id);
     if (!tenant) {
       return NextResponse.json({ error: 'Penyewa tidak ditemukan atau akses ditolak.' }, { status: 403 });
@@ -61,7 +61,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const tenant = await verifyTenantOwner(id, session.id);
     if (!tenant) {
       return NextResponse.json({ error: 'Penyewa tidak ditemukan atau akses ditolak.' }, { status: 403 });
