@@ -29,7 +29,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     const complaint = await verifyComplaintOwner(id, session.id);
     if (!complaint) {
       return NextResponse.json({ error: 'Aduan tidak ditemukan atau akses ditolak.' }, { status: 403 });
@@ -60,7 +60,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     const complaint = await verifyComplaintOwner(id, session.id);
     if (!complaint) {
       return NextResponse.json({ error: 'Aduan tidak ditemukan atau akses ditolak.' }, { status: 403 });
