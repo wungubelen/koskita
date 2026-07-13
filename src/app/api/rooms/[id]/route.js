@@ -25,7 +25,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     const room = await verifyRoomOwner(id, session.id);
     if (!room) {
       return NextResponse.json({ error: 'Kamar tidak ditemukan atau akses ditolak.' }, { status: 403 });
@@ -58,7 +58,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     const room = await verifyRoomOwner(id, session.id);
     if (!room) {
       return NextResponse.json({ error: 'Kamar tidak ditemukan atau akses ditolak.' }, { status: 403 });
