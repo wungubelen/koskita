@@ -4,6 +4,7 @@ import { getLandlordFromRequest } from '@/lib/auth';
 
 // Helper to verify complaint belongs to the landlord
 async function verifyComplaintOwner(complaintId, landlordId) {
+  if (!complaintId) return null;
   const complaint = await prisma.complaint.findUnique({
     where: { id: complaintId },
     include: {
@@ -29,7 +30,13 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID aduan tidak valid.' }, { status: 400 });
+    }
+
     const complaint = await verifyComplaintOwner(id, session.id);
     if (!complaint) {
       return NextResponse.json({ error: 'Aduan tidak ditemukan atau akses ditolak.' }, { status: 403 });
@@ -37,12 +44,13 @@ export async function PUT(request, { params }) {
 
     const { status, description } = await request.json();
 
+    const dataToUpdate = {};
+    if (status !== undefined) dataToUpdate.status = status;
+    if (description !== undefined) dataToUpdate.description = description;
+
     const updatedComplaint = await prisma.complaint.update({
-      where: { id },
-      data: {
-        status: status !== undefined ? status : undefined,
-        description: description !== undefined ? description : undefined,
-      },
+      where: { id: id },
+      data: dataToUpdate,
     });
 
     return NextResponse.json({ complaint: updatedComplaint }, { status: 200 });
@@ -60,14 +68,20 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID aduan tidak valid.' }, { status: 400 });
+    }
+
     const complaint = await verifyComplaintOwner(id, session.id);
     if (!complaint) {
       return NextResponse.json({ error: 'Aduan tidak ditemukan atau akses ditolak.' }, { status: 403 });
     }
 
     await prisma.complaint.delete({
-      where: { id },
+      where: { id: id },
     });
 
     return NextResponse.json({ message: 'Aduan berhasil dihapus.' }, { status: 200 });

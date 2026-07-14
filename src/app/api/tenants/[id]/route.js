@@ -4,6 +4,7 @@ import { getLandlordFromRequest } from '@/lib/auth';
 
 // Helper to verify tenant belongs to the landlord
 async function verifyTenantOwner(tenantId, landlordId) {
+  if (!tenantId) return null;
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
     include: {
@@ -29,7 +30,13 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = params;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID penyewa tidak valid.' }, { status: 400 });
+    }
+
     const tenant = await verifyTenantOwner(id, session.id);
     if (!tenant) {
       return NextResponse.json({ error: 'Penyewa tidak ditemukan atau akses ditolak.' }, { status: 403 });
@@ -37,13 +44,14 @@ export async function PUT(request, { params }) {
 
     const { name, phone, email } = await request.json();
 
+    const dataToUpdate = {};
+    if (name !== undefined) dataToUpdate.name = name;
+    if (phone !== undefined) dataToUpdate.phone = phone;
+    if (email !== undefined) dataToUpdate.email = email;
+
     const updatedTenant = await prisma.tenant.update({
-      where: { id },
-      data: {
-        name: name !== undefined ? name : undefined,
-        phone: phone !== undefined ? phone : undefined,
-        email: email !== undefined ? email : undefined,
-      },
+      where: { id: id },
+      data: dataToUpdate,
     });
 
     return NextResponse.json({ tenant: updatedTenant }, { status: 200 });
@@ -61,7 +69,13 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = params;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID penyewa tidak valid.' }, { status: 400 });
+    }
+
     const tenant = await verifyTenantOwner(id, session.id);
     if (!tenant) {
       return NextResponse.json({ error: 'Penyewa tidak ditemukan atau akses ditolak.' }, { status: 403 });
@@ -71,10 +85,9 @@ export async function DELETE(request, { params }) {
 
     // Jalankan transaksi: hapus penyewa dan ubah status kamar menjadi kosong (VACANT)
     await prisma.$transaction(async (tx) => {
-      // 1. Hapus penyewa (ini juga akan menghapus/menghubungkan tagihannya tergantung Cascade)
-      // Catatan: Karena di schema.prisma kita buat Bill onDelete: Cascade, tagihannya juga akan terhapus otomatis.
+      // 1. Hapus penyewa (tagihan ikut terhapus karena Cascade)
       await tx.tenant.delete({
-        where: { id },
+        where: { id: id },
       });
 
       // 2. Ubah status kamar menjadi kosong (VACANT)

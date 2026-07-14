@@ -4,6 +4,7 @@ import { getLandlordFromRequest } from '@/lib/auth';
 
 // Helper to verify bill belongs to the landlord
 async function verifyBillOwner(billId, landlordId) {
+  if (!billId) return null;
   const bill = await prisma.bill.findUnique({
     where: { id: billId },
     include: {
@@ -29,7 +30,13 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID tagihan tidak valid.' }, { status: 400 });
+    }
+
     const bill = await verifyBillOwner(id, session.id);
     if (!bill) {
       return NextResponse.json({ error: 'Tagihan tidak ditemukan atau akses ditolak.' }, { status: 403 });
@@ -59,7 +66,7 @@ export async function PUT(request, { params }) {
     }
 
     const updatedBill = await prisma.bill.update({
-      where: { id },
+      where: { id: id },
       data: dataToUpdate,
     });
 
@@ -78,14 +85,20 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID tagihan tidak valid.' }, { status: 400 });
+    }
+
     const bill = await verifyBillOwner(id, session.id);
     if (!bill) {
       return NextResponse.json({ error: 'Tagihan tidak ditemukan atau akses ditolak.' }, { status: 403 });
     }
 
     await prisma.bill.delete({
-      where: { id },
+      where: { id: id },
     });
 
     return NextResponse.json({ message: 'Tagihan berhasil dihapus.' }, { status: 200 });
